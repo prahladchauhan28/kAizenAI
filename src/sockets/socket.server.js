@@ -33,22 +33,19 @@ function initSocketServer(httpserver) {
     console.log("New client connected");
 
     socket.on("ai-message", async (message) => {
-      const messagevector = await messageModel.create({
-        user: socket.user._id,
-        chat: message.chat,
-        content: message.content,
-        role: "user",
-      });
 
-      const vectors = await generateVectors(message.content);
-      // console.log("Message Vectors:", vectors);
+      // Save the user message and its vectors
+      const [messagevector, vectors] = await Promise.all([
+        messageModel.create({
+          user: socket.user._id,
+          chat: message.chat,
+          content: message.content,
+          role: "user",
+        }),
+        generateVectors(message.content),
+      ]);
 
-      const memory = await queryMemory({
-        queryVectors: vectors,
-        limit: 3,
-        metadata: {
-        },
-      });
+      // Save the message vector and its metadata
       await createChatMemory({
         vectors,
         message_id: messagevector._id,
@@ -58,28 +55,32 @@ function initSocketServer(httpserver) {
           text: message.content,
         },
       });
-      console.log(memory);
 
-      // const chatHistory = await messageModel.find({ chat: message.chat });
-
-      // Short term memory (mongodb)
-      const chatHistory = (
-        await messageModel
+      // retrieve memory and chat history
+      const [memory, chatHistory] = await Promise.all([
+        queryMemory({
+          queryVectors: vectors,
+          limit: 3,
+          metadata: {},
+        }),
+        messageModel
           .find({
             chat: message.chat,
           })
           .sort({ createdAt: -1 })
           .limit(20)
           .lean()
-      ).reverse();
+          .exec(),
+      ]);
 
+      // Short term memory (mongodb)
       const stm = chatHistory.map((item) => {
         return {
           role: item.role,
           parts: [{ text: item.content }],
         };
       });
-
+      // long term memory (pineconeDB)
       const ltm = [
         {
           role: "user",
@@ -94,21 +95,27 @@ function initSocketServer(httpserver) {
         },
       ];
 
-      console.log(ltm[0]);
-      console.log(stm);
-
+      // Generate a response from the AI
       const response = await generateResponse([...ltm, ...stm]);
 
-      const responseMessage = await messageModel.create({
-        user: socket.user._id,
-        chat: message.chat,
+      // Send the response back to the client
+      socket.emit("ai-response", {
         content: response,
-        role: "model",
+        chat: message.chat,
       });
 
-      const responseVectors = await generateVectors(response);
-      // console.log("Response Vectors:", responseVectors);
+      // Save the response message and vectors
+      const [responseMessage, responseVectors] = await Promise.all([
+        messageModel.create({
+          user: socket.user._id,
+          chat: message.chat,
+          content: response,
+          role: "model",
+        }),
+        generateVectors(response),
+      ]);
 
+      // Save the response message and vectors in DB
       await createChatMemory({
         vectors: responseVectors,
         message_id: responseMessage._id,
@@ -117,11 +124,6 @@ function initSocketServer(httpserver) {
           user: socket.user._id,
           text: response,
         },
-      });
-
-      socket.emit("ai-response", {
-        content: response,
-        chat: message.chat,
       });
     });
   });
