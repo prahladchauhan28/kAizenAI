@@ -5,9 +5,19 @@ import Usermodel from "../models/auth.model.js";
 import { generateResponse, generateVectors } from "../services/ai.service.js";
 import messageModel from "../models/message.model.js";
 import { createChatMemory, queryMemory } from "../services/vector.service.js";
+import cors from "cors";
 
 function initSocketServer(httpserver) {
-  const io = new Server(httpserver, {});
+  const io = new Server(httpserver, {
+    //  CORS middleware
+      cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+  });
+
+
 
   // Middleware for authentication
   io.use(async (socket, next) => {
