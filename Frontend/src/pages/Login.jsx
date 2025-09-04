@@ -1,118 +1,86 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import useTheme from '../hooks/useTheme';
-import axios from 'axios';
-import '../styles/theme.css';
-import '../styles/Login.css';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Login = () => {
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e) => { 
+  function handleChange(e) {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
+    setForm({ ...form, [name]: value });
+  }
 
-   const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
-    
-      axios.post("http://localhost:3000/api/auth/login", {
-            email: formData.email,
-            password: formData.password
-        },
-            {
-                withCredentials: true
-            }
-        ).then((res) => {
-            console.log(res);
-            navigate("/");
-        }).catch((err) => {
-            console.error(err);
-        }).finally(() => {
-            setIsLoading(false);
-        });
+    setSubmitting(true);
 
-  };
+    // console.log(form);
+    // https://kaizenai-qyz5.onrender.com/api/auth/login
+
+    axios
+      .post(
+        "https://kaizenai-qyz5.onrender.com/api/auth/login",
+        {
+          email: form.email,
+          password: form.password,
+        },
+        {
+          withCredentials: true,
+        }
+      )
+      .then((res) => {
+        console.log(res);
+        navigate("/");
+      })
+      .catch((err) => {
+        console.error(err);
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
+  }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1>Welcome Back</h1>
-          <p>Please sign in to your account</p>
-        </div>
-
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="input-group">
-            <Mail className="input-icon" size={18} />
+    <div className="center-min-h-screen">
+      <div className="auth-card" role="main" aria-labelledby="login-heading">
+        <header className="auth-header">
+          <h1 id="login-heading">Sign in</h1>
+          <p className="auth-sub">Welcome back. We've missed you.</p>
+        </header>
+        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <div className="field-group">
+            <label htmlFor="login-email">Email</label>
             <input
-              type="email"
+              id="login-email"
               name="email"
-              placeholder="Email address"
-              value={formData.email}
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
               onChange={handleChange}
               required
             />
           </div>
-
-          <div className="input-group">
-            <Lock className="input-icon" size={18} />
+          <div className="field-group">
+            <label htmlFor="login-password">Password</label>
             <input
-              type={showPassword ? 'text' : 'password'}
+              id="login-password"
               name="password"
-              placeholder="Password"
-              value={formData.password}
+              type="password"
+              autoComplete="current-password"
+              placeholder="Your password"
               onChange={handleChange}
               required
             />
-            <button
-              type="button"
-              className="password-toggle"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
           </div>
-
-          <button 
-            type="submit" 
-            className="auth-button"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing In...' : 'Sign In'}
+          <button type="submit" className="primary-btn" disabled={submitting}>
+            {submitting ? "Signing in..." : "Sign in"}
           </button>
         </form>
-
-        <div className="auth-footer">
-          <span>Don't have an account? </span>
-          <button 
-            type="button"
-            className="link-button"
-            onClick={() => navigate('/register')}
-          >
-            Sign up
-          </button>
-        </div>
+        <p className="auth-alt">
+          Need an account? <Link to="/register">Create one</Link>
+        </p>
       </div>
     </div>
   );

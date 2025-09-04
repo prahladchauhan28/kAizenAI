@@ -1,10 +1,15 @@
-import MainRoutes from "./routes/MainRoutes"
+import { useState } from 'react'
 
-const App = () => {
+import './App.css'
+import AppRoutes from './AppRoutes'
+
+function App() {
+
+
   return (
-    <div>
-      <MainRoutes />
-    </div>
+    <>
+      <AppRoutes />
+    </>
   )
 }
 

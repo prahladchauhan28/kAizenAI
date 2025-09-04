@@ -1,156 +1,126 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
-import useTheme from '../hooks/useTheme';
-import axios from 'axios';
-import '../styles/theme.css';
-import '../styles/Register.css';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Register = () => {
-  const navigate = useNavigate();
-  const { theme } = useTheme();
-  const [formData, setFormData] = useState({
-    firstname: '',
-    lastname: '',
-    email: '',
-    password: ''
+  const [form, setForm] = useState({
+    email: "",
+    firstname: "",
+    lastname: "",
+    password: "",
   });
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
 
-  const handleChange = (e) => {
+  function handleChange(e) {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
+    setForm((f) => ({ ...f, [name]: value }));
+  }
 
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
+    setSubmitting(true);
+    console.log(form);
 
-    // Basic validation
-    if (formData.password.length < 4) {
-      setError('Password must be at least 4 characters long');
-      setIsLoading(false);
-      return;
+    axios
+      .post(
+        "https://kaizenai-qyz5.onrender.com/api/auth/register",
+        {
+          email: form.email,
+          fullname: {
+            firstname: form.firstname,
+            lastname: form.lastname,
+          },
+          password: form.password,
+        },
+        {
+          withCredentials: true,
+        }
+      )
+      .then((res) => {
+        console.log(res);
+        navigate("/");
+      })
+      .catch((err) => {
+        console.error(err);
+        alert("Registration failed (placeholder)");
+      });
+
+    try {
+      // Placeholder: integrate real registration logic / API call.
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
     }
-
-          axios.post("http://localhost:3000/api/auth/register", {
-            email: formData.email,
-            fullname: {
-                firstname: formData.firstname,
-                lastname: formData.lastname
-            },
-            password: formData.password
-        }, {
-            withCredentials: true
-        }).then((res) => {
-            console.log(res);
-            navigate("/");
-        }).catch((err) => {
-            console.error(err);
-            alert('Registration failed (placeholder)');
-        })
-        .finally(() => {
-            setIsLoading(false);
-        });
-  };
+  }
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1>Create Account</h1>
-          <p>Please fill in your information</p>
-        </div>
-
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="name-row">
-            <div className="input-group half-width">
-              <User className="input-icon" size={18} />
-              <input
-                type="text"
-                name="firstname"
-                placeholder="First name"
-                value={formData.firstname}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="input-group half-width">
-              <User className="input-icon" size={18} />
-              <input
-                type="text"
-                name="lastname"
-                placeholder="Last name"
-                value={formData.lastname}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="input-group">
-            <Mail className="input-icon" size={18} />
+    <div className="center-min-h-screen">
+      <div className="auth-card" role="main" aria-labelledby="register-heading">
+        <header className="auth-header">
+          <h1 id="register-heading">Create account</h1>
+          <p className="auth-sub">Join us and start exploring.</p>
+        </header>
+        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <div className="field-group">
+            <label htmlFor="email">Email</label>
             <input
-              type="email"
+              id="email"
               name="email"
-              placeholder="Email address"
-              value={formData.email}
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={form.email}
               onChange={handleChange}
               required
             />
           </div>
-
-          <div className="input-group">
-            <Lock className="input-icon" size={18} />
+          <div className="grid-2">
+            <div className="field-group">
+              <label htmlFor="firstname">First name</label>
+              <input
+                id="firstname"
+                name="firstname"
+                placeholder="Jane"
+                value={form.firstname}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="field-group">
+              <label htmlFor="lastname">Last name</label>
+              <input
+                id="lastname"
+                name="lastname"
+                placeholder="Doe"
+                value={form.lastname}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          </div>
+          <div className="field-group">
+            <label htmlFor="password">Password</label>
             <input
-              type={showPassword ? 'text' : 'password'}
+              id="password"
               name="password"
-              placeholder="Password (min 4 characters)"
-              value={formData.password}
+              type="password"
+              autoComplete="new-password"
+              placeholder="Create a password"
+              value={form.password}
               onChange={handleChange}
               required
+              minLength={6}
             />
-            <button
-              type="button"
-              className="password-toggle"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
           </div>
-
-          <button 
-            type="submit" 
-            className="auth-button"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Creating Account...' : 'Create Account'}
+          <button type="submit" className="primary-btn" disabled={submitting}>
+            {submitting ? "Creating..." : "Create Account"}
           </button>
         </form>
-
-        <div className="auth-footer">
-          <span>Already have an account? </span>
-          <button 
-            type="button"
-            className="link-button"
-            onClick={() => navigate('/login')}
-          >
-            Sign in
-          </button>
-        </div>
+        <p className="auth-alt">
+          Already have an account? <Link to="/login">Sign in</Link>
+        </p>
       </div>
     </div>
   );
